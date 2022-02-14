@@ -1,15 +1,13 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 jar {
     manifest {
-        from 'MANIFEST.MF'
+        from 'resources/META-INF/MANIFEST.MF'
     }
 }
-
-group 'org.example'
-version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -20,4 +18,15 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.14.3'
     implementation'javax.mail:mail:1.4.7'
     implementation 'jaf:activation:1.0.2'
+}
+
+mainClassName = "Main"
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes "Main-Class": "$mainClassName"
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
