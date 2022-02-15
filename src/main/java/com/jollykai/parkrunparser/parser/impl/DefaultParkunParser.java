@@ -23,18 +23,19 @@ import java.util.List;
 import java.util.Properties;
 
 @Component
-@PropertySource("classpath:parkun.properties")
 public class DefaultParkunParser implements ParkunParser {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultParkunParser.class);
-
-    private static String USER_NAME = "***";  // GMail user name (just the part before "@gmail.com")
-    private static String PASSWORD = "***"; // GMail password
-    private static String RECIPIENT = "***";
 
     @Value("${parkrun.url}")
     private String endpoint;
     @Value("${parkrun.output.file}")
     private String outputFile;
+    @Value("${parkrun.user.name:***}")
+    private String userName;
+    @Value("${parkrun.password:***}")
+    private String password;
+    @Value("${parkrun.recipient:***}")
+    private String recipient;
 
     @Override
     public void parse() throws IOException {
@@ -75,9 +76,7 @@ public class DefaultParkunParser implements ParkunParser {
         }
         fw.close();
         //send email
-        String from = USER_NAME;
-        String pass = PASSWORD;
-        String[] to = {RECIPIENT}; // list of recipient email addresses
+
         String subject = "Отчёт по волонтёрам Parkrun Петергоф";
 
         Reader fr = new FileReader(file);
@@ -89,7 +88,7 @@ public class DefaultParkunParser implements ParkunParser {
         }
 
         String body = sb.toString();
-        sendFromGMail(from, pass, to, subject, body);
+        sendFromGMail(userName, password, new String[]{recipient}, subject, body);
     }
 
     private void someFunc(Elements user,  List<Integer> volounterID,List<String> volounterNames,FileWriter fw ){
@@ -160,8 +159,8 @@ public class DefaultParkunParser implements ParkunParser {
                 toAddress[i] = new InternetAddress(to[i]);
             }
 
-            for (int i = 0; i < toAddress.length; i++) {
-                message.addRecipient(Message.RecipientType.TO, toAddress[i]);
+            for (InternetAddress address : toAddress) {
+                message.addRecipient(Message.RecipientType.TO, address);
             }
 
             message.setSubject(subject);

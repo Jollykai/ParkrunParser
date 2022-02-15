@@ -4,6 +4,8 @@ import com.jollykai.parkrunparser.parser.ParkunParser;
 import com.jollykai.parkrunparser.parser.ParkunParserConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
@@ -11,7 +13,8 @@ import org.springframework.context.annotation.PropertySource;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 
-@SpringBootApplication
+@SpringBootConfiguration
+@EnableAutoConfiguration
 @Import(ParkunParserConfig.class)
 @PropertySource({
         "classpath:parkun.properties"
