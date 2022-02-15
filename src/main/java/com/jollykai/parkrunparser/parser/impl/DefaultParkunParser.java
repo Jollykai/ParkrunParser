@@ -1,6 +1,6 @@
 package com.jollykai.parkrunparser.parser.impl;
 
-import com.jollykai.parkrunparser.StringUtils;
+import com.jollykai.parkrunparser.utility.StringUtils;
 import com.jollykai.parkrunparser.parser.ParkunParser;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

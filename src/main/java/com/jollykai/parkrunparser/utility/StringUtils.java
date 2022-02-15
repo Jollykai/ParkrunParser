@@ -1,4 +1,4 @@
-package com.jollykai.parkrunparser;
+package com.jollykai.parkrunparser.utility;
 
 import java.util.Optional;
 
