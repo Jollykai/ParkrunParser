@@ -3,12 +3,6 @@ plugins {
     id 'application'
 }
 
-jar {
-    manifest {
-        from 'resources/META-INF/MANIFEST.MF'
-    }
-}
-
 repositories {
     mavenCentral()
 }
@@ -20,10 +14,18 @@ dependencies {
     implementation 'jaf:activation:1.0.2'
 }
 
+compileJava.options.encoding = 'UTF-8'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
 mainClassName = "Main"
+
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
+        from 'resources/META-INF/MANIFEST.MF'
         attributes "Main-Class": "$mainClassName"
     }
     from {
