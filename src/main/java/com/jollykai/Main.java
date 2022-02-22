@@ -12,76 +12,32 @@ import java.util.List;
 
 public class Main {
 
-    private static String USER_NAME = "***";  // GMail user name (just the part before "@gmail.com")
-    private static String PASSWORD = "***"; // GMail password
-    private static String RECIPIENT = "***";
+    private final static String USER_NAME = "***";  // GMail username (just the part before "@gmail.com")
+    private final static String PASSWORD = "***"; // GMail password
+    private final static String RECIPIENT = "***";
 
     private final static String URL = "https://www.parkrun.ru/petergofaleksandriysky/results/latestresults/";
+    private final static String OUTPUT_FILE = "results.txt";
 
     public static void main(String[] args) {
 
+        //Parsing site to get volunteerList
         List<Volunteer> volunteerList = countVolunteers(new ArrayList<>());
 
-        File file = new File("results.txt");
+        //Write info in file
+        try (OutputStreamWriter writeInFile =
+                     new OutputStreamWriter(new FileOutputStream(OUTPUT_FILE), StandardCharsets.UTF_8)) {
 
-        OutputStreamWriter fw = null;
-        try {
-            fw = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8.newEncoder());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        // write in file
+            writeInFile.write("Волонтеров в забеге: " + (volunteerList.size() - 1) + "\n");
+            for (Volunteer volunteer : volunteerList) {
+                writeInFile.write("\n" + volunteer.toString());
+                writeInFile.write(setAchievement(volunteer.getVolunteeringCounter()));
+            }
 
-        try {
-            assert fw != null;
-            fw.write("Волонтеров в забеге: " + (volunteerList.size() - 1) + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        for (Volunteer volunteer : volunteerList) {
-            String achievement = "";
-
-            try {
-                fw.write("\n" + volunteer.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            switch (volunteer.getVolunteeringCounter()) {
-                case 1:
-                    achievement = " - Первое волонтерство!";
-                    break;
-                case 10:
-                    achievement = " - Теперь в клубе 10!* Только если возраст меньше 18! Проверить";
-                    break;
-                case 25:
-                    achievement = " - Теперь в клубе 25!";
-                    break;
-                case 50:
-                    achievement = " - Теперь в клубе 50!";
-                    break;
-                case 100:
-                    achievement = " - Теперь в клубе 100!";
-                    break;
-                case 250:
-                    achievement = " - Теперь в клубе 250!";
-                    break;
-                case 500:
-                    achievement = " - Теперь в клубе 500!";
-                    break;
-            }
-            try {
-                fw.write(achievement);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            fw.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
     /*
         //send email
         String from = USER_NAME;
@@ -138,8 +94,9 @@ public class Main {
         } catch (MessagingException me) {
             me.printStackTrace();
         }
-
      */
+    }
+
     private static List<Volunteer> countVolunteers(List<Volunteer> volunteerList) {
 
         Document runningResultsPage = null;
@@ -180,5 +137,25 @@ public class Main {
 
         }
         return volunteerList;
+    }
+
+    private static String setAchievement(int volunteeringCounter) {
+        switch (volunteeringCounter) {
+            case 1:
+                return " - Первое волонтерство!";
+            case 10:
+                return " - Теперь в клубе 10!* Только если возраст меньше 18! Проверить";
+            case 25:
+                return " - Теперь в клубе 25!";
+            case 50:
+                return " - Теперь в клубе 50!";
+            case 100:
+                return " - Теперь в клубе 100!";
+            case 250:
+                return " - Теперь в клубе 250!";
+            case 500:
+                return " - Теперь в клубе 500!";
+        }
+        return "";
     }
 }
