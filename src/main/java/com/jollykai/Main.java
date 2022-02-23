@@ -1,14 +1,27 @@
 package com.jollykai;
 
+import jdk.nashorn.internal.parser.JSONParser;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.json.*;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.Scanner;
 
 public class Main {
 
@@ -18,6 +31,7 @@ public class Main {
 
     private final static String URL = "https://www.parkrun.ru/petergofaleksandriysky/results/latestresults/";
     private final static String OUTPUT_FILE = "results.txt";
+    private final static String CONFIG_FILE = "config.json";
 
     public static void main(String[] args) {
 
@@ -38,23 +52,27 @@ public class Main {
             e.printStackTrace();
         }
 
-    /*
         //send email
-        String from = USER_NAME;
-        String pass = PASSWORD;
-        String[] to = {RECIPIENT}; // list of recipient email addresses
+        configFileExistCheck();
+
         String subject = "Отчет по волонтерам Parkrun Петергоф";
 
-        Reader fr = new FileReader(file);
-        StringBuilder sb = new StringBuilder();
-        int x = fr.read();
-        while (x != -1) {
-            sb.append((char)x);
-            x = fr.read();
+        try (Reader fr = new FileReader(OUTPUT_FILE)) {
+            StringBuilder sb = new StringBuilder();
+            int x = fr.read();
+            while (x != -1) {
+                sb.append((char) x);
+                x = fr.read();
+            }
+            String body = sb.toString();
+
+//            InputStream is = ReadJSONString.class.getResourceAsStream(CONFIG_FILE);
+//
+//            sendFromGMail(from, pass, to, subject, body);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        String body = sb.toString();
-        sendFromGMail(from, pass, to, subject, body);
     }
 
     private static void sendFromGMail(String from, String pass, String[] to, String subject, String body) {
@@ -89,12 +107,10 @@ public class Main {
             transport.connect(host, from, pass);
             transport.sendMessage(message, message.getAllRecipients());
             transport.close();
-        } catch (AddressException ae) {
+        } catch (MessagingException ae) {
             ae.printStackTrace();
-        } catch (MessagingException me) {
-            me.printStackTrace();
         }
-     */
+
     }
 
     private static List<Volunteer> countVolunteers(List<Volunteer> volunteerList) {
@@ -157,5 +173,47 @@ public class Main {
                 return " - Теперь в клубе 500!";
         }
         return "";
+    }
+
+    private static void configFileExistCheck() {
+
+        File file = new File(CONFIG_FILE);
+        String from = "";
+        String password = "";
+        String to = "";
+
+        if (!file.exists()) {
+
+            Scanner userInput = new Scanner(System.in);
+            System.out.println("Файл конфигурации - \"" + CONFIG_FILE + "\", не обнаружен! Введите данные авторизации\n");
+
+            System.out.print("Gmail Логин (без @gmail.com): ");
+            from = userInput.nextLine().trim();
+
+            System.out.print("Gmail Пароль: ");
+            password = userInput.nextLine().trim();
+
+            System.out.print("E-mail ардес получателя отчетов: ");
+            to = userInput.nextLine().trim();
+            userInput.close();
+
+            JSONObject gmailSettings = new JSONObject();
+            gmailSettings.put("Login:", from);
+            gmailSettings.put("Password:", password);
+
+            JSONObject config = new JSONObject();
+            config.put("Gmail Settings", gmailSettings);
+            config.put("Recipient", to);
+
+            try (FileWriter createConfigFile = new FileWriter(CONFIG_FILE)) {
+                createConfigFile.write(config.toString(1));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            System.out.println("Файл конфигурации загружен успешно");
+        }
+
     }
 }
