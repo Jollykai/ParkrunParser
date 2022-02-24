@@ -14,6 +14,7 @@ dependencies {
     implementation 'jaf:activation:1.0.2'
 
     implementation 'org.json:json:20211205'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.1'
 }
 
 compileJava.options.encoding = 'UTF-8'

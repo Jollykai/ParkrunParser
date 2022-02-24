@@ -1,23 +1,22 @@
 package com.jollykai;
 
-import jdk.nashorn.internal.parser.JSONParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.json.*;
 
 import javax.mail.Message;
-import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -25,102 +24,51 @@ import java.util.Scanner;
 
 public class Main {
 
-    private final static String USER_NAME = "***";  // GMail username (just the part before "@gmail.com")
-    private final static String PASSWORD = "***"; // GMail password
-    private final static String RECIPIENT = "***";
-
     private final static String URL = "https://www.parkrun.ru/petergofaleksandriysky/results/latestresults/";
     private final static String OUTPUT_FILE = "results.txt";
     private final static String CONFIG_FILE = "config.json";
+    private final static String SUBJECT = "Отчет по волонтерам Parkrun Петергоф Александрийский";
+
+    private static String USER_NAME = "";
+    private static String PASSWORD = "";
+    private static String RECIPIENT = "";
 
     public static void main(String[] args) {
 
-        //Parsing site to get volunteerList
+        //Parsing site to get data for volunteerList
         List<Volunteer> volunteerList = countVolunteers(new ArrayList<>());
 
-        //Write info in file
-        try (OutputStreamWriter writeInFile =
-                     new OutputStreamWriter(new FileOutputStream(OUTPUT_FILE), StandardCharsets.UTF_8)) {
+        //Write parsed data in local file
+        saveDataToFile(volunteerList);
 
-            writeInFile.write("Волонтеров в забеге: " + (volunteerList.size() - 1) + "\n");
-            for (Volunteer volunteer : volunteerList) {
-                writeInFile.write("\n" + volunteer.toString());
-                writeInFile.write(setAchievement(volunteer.getVolunteeringCounter()));
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //send email
+        //Create config file
         configFileExistCheck();
 
-        String subject = "Отчет по волонтерам Parkrun Петергоф";
+        //Read config data
+        readConfigFile();
 
-        try (Reader fr = new FileReader(OUTPUT_FILE)) {
-            StringBuilder sb = new StringBuilder();
-            int x = fr.read();
-            while (x != -1) {
-                sb.append((char) x);
-                x = fr.read();
-            }
-            String body = sb.toString();
-
-//            InputStream is = ReadJSONString.class.getResourceAsStream(CONFIG_FILE);
-//
-//            sendFromGMail(from, pass, to, subject, body);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //Send mail
+        sendMail(USER_NAME, PASSWORD, RECIPIENT);
 
     }
 
-    private static void sendFromGMail(String from, String pass, String[] to, String subject, String body) {
-        Properties props = System.getProperties();
-        String host = "smtp.gmail.com";
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.smtp.host", host);
-        props.put("mail.smtp.user", from);
-        props.put("mail.smtp.password", pass);
-        props.put("mail.smtp.port", "587");
-        props.put("mail.smtp.auth", "true");
-
-        Session session = Session.getDefaultInstance(props);
-        MimeMessage message = new MimeMessage(session);
-
-        try {
-            message.setFrom(new InternetAddress(from));
-            InternetAddress[] toAddress = new InternetAddress[to.length];
-
-            // To get the array of addresses
-            for (int i = 0; i < to.length; i++) {
-                toAddress[i] = new InternetAddress(to[i]);
-            }
-
-            for (int i = 0; i < toAddress.length; i++) {
-                message.addRecipient(Message.RecipientType.TO, toAddress[i]);
-            }
-
-            message.setSubject(subject);
-            message.setText(body);
-            Transport transport = session.getTransport("smtp");
-            transport.connect(host, from, pass);
-            transport.sendMessage(message, message.getAllRecipients());
-            transport.close();
-        } catch (MessagingException ae) {
-            ae.printStackTrace();
-        }
-
-    }
-
+    /**
+     * Parse HTML, saves $ID and $names in List, and call getCounter(List<Obj> List) to collect other data.
+     *
+     * @param volunteerList empty List
+     * @return List with all collected data received from getCounter(List<Obj> List)
+     * @see #getCounter(List)
+     */
     private static List<Volunteer> countVolunteers(List<Volunteer> volunteerList) {
 
         Document runningResultsPage = null;
+
         try {
             runningResultsPage = Jsoup.connect(URL)
                     .userAgent("Chrome/4.0.249.0 Safari/532.5")
                     .referrer("http://www.google.com")
                     .get();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -129,14 +77,26 @@ public class Main {
         Elements user = runningResultsPage.select("p:nth-child(2) > a");
 
         for (Element link : user) {
-            if (!link.attr("href").replaceAll("[^0-9]", "").equals(""))
+
+            if (!link.attr("href").replaceAll("[^0-9]", "").equals("")) {
+
                 volunteerList.add(new Volunteer(
                         Integer.parseInt(link.attr("href").replaceAll("[^0-9]", "")),
                         link.text()));
+
+            }
+
         }
         return getCounter(volunteerList);
     }
 
+    /**
+     * Parse HTML and saves $volunteeringCounter of Objects in List.
+     *
+     * @param volunteerList List of Object containing $ID, which uses to get required URL
+     * @return List with all fields filled
+     * @see #countVolunteers(List)
+     */
     private static List<Volunteer> getCounter(List<Volunteer> volunteerList) {
 
         for (Volunteer volunteer : volunteerList) {
@@ -148,15 +108,51 @@ public class Main {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
             assert volunteerProfilePage != null;
-            volunteer.setVolunteeringCounter(Integer.parseInt(volunteerProfilePage.select("td:nth-child(2) > strong").text()));
+            volunteer.setVolunteeringCounter(
+                    Integer.parseInt(volunteerProfilePage.select("td:nth-child(2) > strong").text()));
 
         }
         return volunteerList;
     }
 
+    /**
+     * Checks Counters, for achievement and saves data to local file.
+     * @param volunteerList List of Object containing $volunteeringCounter,
+     *                      what compares whether achievements have been received
+     * @see #setAchievement(int)
+     */
+    private static void saveDataToFile(List<Volunteer> volunteerList) {
+
+        try (OutputStreamWriter writeInFile =
+                     new OutputStreamWriter(new FileOutputStream(OUTPUT_FILE), StandardCharsets.UTF_8)) {
+
+            writeInFile.write(SUBJECT + "\n\n");
+            writeInFile.write("Волонтеров в забеге: " + (volunteerList.size() - 1) + "\n");
+
+            for (Volunteer volunteer : volunteerList) {
+                writeInFile.write("\n" + volunteer.toString());
+                writeInFile.write(setAchievement(volunteer.getVolunteeringCounter()));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Checks, is current number gives achievement.
+     *
+     * @param volunteeringCounter Times of volunteering
+     * @return String with achievement name
+     * @see #saveDataToFile(List)
+     */
     private static String setAchievement(int volunteeringCounter) {
+
         switch (volunteeringCounter) {
+
             case 1:
                 return " - Первое волонтерство!";
             case 10:
@@ -171,21 +167,27 @@ public class Main {
                 return " - Теперь в клубе 250!";
             case 500:
                 return " - Теперь в клубе 500!";
+
         }
         return "";
     }
 
+    /**
+     * Creates config file from user input data in case config file not exist.
+     */
     private static void configFileExistCheck() {
 
         File file = new File(CONFIG_FILE);
-        String from = "";
-        String password = "";
-        String to = "";
+
+        String from;
+        String password;
+        String to;
 
         if (!file.exists()) {
 
+            System.out.println("Файл конфигурации - \"" + CONFIG_FILE + "\", не обнаружен! " +
+                    "Введите данные авторизации\n");
             Scanner userInput = new Scanner(System.in);
-            System.out.println("Файл конфигурации - \"" + CONFIG_FILE + "\", не обнаружен! Введите данные авторизации\n");
 
             System.out.print("Gmail Логин (без @gmail.com): ");
             from = userInput.nextLine().trim();
@@ -198,8 +200,8 @@ public class Main {
             userInput.close();
 
             JSONObject gmailSettings = new JSONObject();
-            gmailSettings.put("Login:", from);
-            gmailSettings.put("Password:", password);
+            gmailSettings.put("Login", from);
+            gmailSettings.put("Password", password);
 
             JSONObject config = new JSONObject();
             config.put("Gmail Settings", gmailSettings);
@@ -211,9 +213,75 @@ public class Main {
                 e.printStackTrace();
             }
 
-        } else {
-            System.out.println("Файл конфигурации загружен успешно");
         }
 
     }
+
+    /**
+     * Read auth data for sending mail.
+     */
+    private static void readConfigFile() {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+
+            String configString = Files.readString(Path.of(CONFIG_FILE), StandardCharsets.UTF_8);
+            JsonNode gmailSettings = mapper.readTree(configString).get("Gmail Settings");
+
+            USER_NAME = mapper.readTree(String.valueOf(gmailSettings)).get("Login").textValue();
+            PASSWORD = mapper.readTree(String.valueOf(gmailSettings)).get("Password").textValue();
+            RECIPIENT = mapper.readTree(configString).get("Recipient").textValue();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Send e-mail with data from file with results.
+     *
+     * @param from    Login for smtp server auth
+     * @param password PWD for smtp server auth
+     * @param to       E-mail of recipient
+     * @see #readConfigFile()
+     */
+    private static void sendMail(String from, String password, String to) {
+
+        Properties props = System.getProperties();
+        String host = "smtp.gmail.com";
+
+        props.put("mail.smtp.ssl.trust", host);
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", host);
+        props.put("mail.smtp.user", from);
+        props.put("mail.smtp.password", password);
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.auth", "true");
+
+        Session session = Session.getDefaultInstance(props);
+        MimeMessage message = new MimeMessage(session);
+
+        try {
+
+            String letterBody = Files.readString(Path.of(OUTPUT_FILE), StandardCharsets.UTF_8);
+
+            message.setFrom(new InternetAddress(from));
+            message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+            message.setSubject(Main.SUBJECT);
+            message.setText(letterBody);
+
+            Transport transport = session.getTransport("smtp");
+            transport.connect(host, from, password);
+            transport.sendMessage(message, message.getAllRecipients());
+            transport.close();
+
+        } catch (Exception messagingException) {
+            messagingException.printStackTrace();
+        }
+
+    }
+
 }

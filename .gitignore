@@ -1,4 +1,11 @@
-results.txt
+#IDE
 .gradle
 .idea
+
+#Java
+.class
+.jar
+
+#Data
 config.json
+results.txt
