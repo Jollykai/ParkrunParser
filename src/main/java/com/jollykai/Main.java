@@ -16,7 +16,7 @@ import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -35,19 +35,10 @@ public class Main {
 
     public static void main(String[] args) {
 
-        //Parsing site to get data for volunteerList
         List<Volunteer> volunteerList = countVolunteers(new ArrayList<>());
-
-        //Write parsed data in local file
         saveDataToFile(volunteerList);
-
-        //Create config file
         configFileExistCheck();
-
-        //Read config data
         readConfigFile();
-
-        //Send mail
         sendMail(USER_NAME, PASSWORD, RECIPIENT);
 
     }
@@ -226,7 +217,7 @@ public class Main {
 
         try {
 
-            String configString = Files.readString(Path.of(CONFIG_FILE), StandardCharsets.UTF_8);
+            String configString = new String(Files.readAllBytes(Paths.get(CONFIG_FILE)));
             JsonNode gmailSettings = mapper.readTree(configString).get("Gmail Settings");
 
             USER_NAME = mapper.readTree(String.valueOf(gmailSettings)).get("Login").textValue();
@@ -266,8 +257,7 @@ public class Main {
 
         try {
 
-            String letterBody = Files.readString(Path.of(OUTPUT_FILE), StandardCharsets.UTF_8);
-
+            String letterBody = new String(Files.readAllBytes(Paths.get(OUTPUT_FILE)));
             message.setFrom(new InternetAddress(from));
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
             message.setSubject(Main.SUBJECT);
