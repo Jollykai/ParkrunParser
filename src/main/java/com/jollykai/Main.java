@@ -176,31 +176,36 @@ public class Main {
 
         if (!file.exists()) {
 
-            System.out.println("Файл конфигурации - \"" + CONFIG_FILE + "\", не обнаружен! " +
-                    "Введите данные авторизации\n");
-            Scanner userInput = new Scanner(System.in);
+            try (PrintStream printStream = new PrintStream(System.out, true, "UTF-8");
+                 Scanner userInput = new Scanner(System.in)){
 
-            System.out.print("Gmail Логин (без @gmail.com): ");
-            from = userInput.nextLine().trim();
+                printStream.print("Файл конфигурации - \"" + CONFIG_FILE + "\", не обнаружен! " +
+                        "Введите данные авторизации\n\n");
 
-            System.out.print("Gmail Пароль: ");
-            password = userInput.nextLine().trim();
+                printStream.print("Gmail Логин (без @gmail.com): ");
+                from = userInput.nextLine().trim();
 
-            System.out.print("E-mail ардес получателя отчетов: ");
-            to = userInput.nextLine().trim();
-            userInput.close();
+                printStream.print("Gmail Пароль: ");
+                password = userInput.nextLine().trim();
 
-            JSONObject gmailSettings = new JSONObject();
-            gmailSettings.put("Login", from);
-            gmailSettings.put("Password", password);
+                printStream.print("E-mail ардес получателя отчетов: ");
+                to = userInput.nextLine().trim();
 
-            JSONObject config = new JSONObject();
-            config.put("Gmail Settings", gmailSettings);
-            config.put("Recipient", to);
+                JSONObject gmailSettings = new JSONObject();
+                gmailSettings.put("Login", from);
+                gmailSettings.put("Password", password);
 
-            try (FileWriter createConfigFile = new FileWriter(CONFIG_FILE)) {
-                createConfigFile.write(config.toString(1));
-            } catch (IOException e) {
+                JSONObject config = new JSONObject();
+                config.put("Gmail Settings", gmailSettings);
+                config.put("Recipient", to);
+
+                try (FileWriter createConfigFile = new FileWriter(CONFIG_FILE)) {
+                    createConfigFile.write(config.toString(1));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
 
@@ -257,7 +262,7 @@ public class Main {
 
         try {
 
-            String letterBody = new String(Files.readAllBytes(Paths.get(OUTPUT_FILE)));
+            String letterBody = new String(Files.readAllBytes(Paths.get(OUTPUT_FILE)), StandardCharsets.UTF_8);
             message.setFrom(new InternetAddress(from));
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
             message.setSubject(Main.SUBJECT);

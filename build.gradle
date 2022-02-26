@@ -28,7 +28,7 @@ mainClassName = "Main"
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        from 'resources/META-INF/MANIFEST.MF'
+        from 'src/main/resources/META-INF/MANIFEST.MF'
         attributes "Main-Class": "$mainClassName"
     }
     from {

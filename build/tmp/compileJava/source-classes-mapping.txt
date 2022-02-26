@@ -1,4 +1,0 @@
-com/jollykai/Main.java
- com.jollykai.Main
-com/jollykai/Volunteer.java
- com.jollykai.Volunteer

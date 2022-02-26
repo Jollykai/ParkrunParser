@@ -1,0 +1,18 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="PP.jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/PP</output-path>
+    <root id="archive" name="PP.jar.jar">
+      <element id="library" level="project" name="Gradle: com.fasterxml.jackson.core:jackson-annotations:2.13.1" />
+      <element id="library" level="project" name="Gradle: com.fasterxml.jackson.core:jackson-core:2.13.1" />
+      <element id="library" level="project" name="Gradle: com.fasterxml.jackson.core:jackson-databind:2.13.1" />
+      <element id="library" level="project" name="Gradle: javax.activation:activation:1.1" />
+      <element id="library" level="project" name="Gradle: javax.mail:mail:1.4.7" />
+      <element id="library" level="project" name="Gradle: org.json:json:20211205" />
+      <element id="library" level="project" name="Gradle: org.jsoup:jsoup:1.14.3" />
+      <element id="module-output" name="ParkrunParser.main" />
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/META-INF/MANIFEST.MF" />
+      </element>
+    </root>
+  </artifact>
+</component>
